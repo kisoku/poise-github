@@ -5,5 +5,7 @@ license 'apache2'
 description 'Installs/Configures poise-github'
 long_description 'Installs/Configures poise-github'
 version '0.1.0'
+issues_url 'https://github.com/kisoku/poise-github/issues'
+source_url 'https://github.com/kisoku/poise-github'
 
 depends 'poise'
