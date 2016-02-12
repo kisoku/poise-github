@@ -1,0 +1,25 @@
+---
+driver:
+  name: vagrant
+
+provisioner:
+  name: chef_zero
+
+# Uncomment the following verifier to leverage Inspec instead of Busser (the
+# default verifier)
+# verifier:
+#   name: inspec
+
+platforms:
+  - name: ubuntu-14.04
+    driver:
+      box: bento/ubuntu-14.04
+
+suites:
+  - name: default
+    run_list:
+      - recipe[poise-github-test::default]
+    attributes:
+      poise-github:
+        login: <%= ENV.fetch('POISE_GITHUB_LOGIN', 'badlogin') %>
+        access_token: <%= ENV.fetch('POISE_GITHUB_ACCESS_TOKEN', 'badtoken') %>
