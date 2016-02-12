@@ -32,6 +32,10 @@ module PoiseGithub
       attribute(:members, kind_of: Array)
       attribute(:purge_unknown_members, equal_to: [true, false], default: true)
 
+      def whyrun_supported?
+        false
+      end
+
       def client
         parent.client
       end
@@ -54,6 +58,11 @@ module PoiseGithub
       end
 
       def action_delete
+        if new_resource.parent.has_team?(new_resource.name)
+          current_team = new_resource.client.organization_teams(new_resource.organization).find{|t| t[:name] = new_resource.name } 
+          new_resource.client.delete_team(current_team[:id])
+          new_resource.updated_by_last_action(true)
+        end
       end
 
       private
