@@ -32,6 +32,7 @@ module PoiseGithub
       attribute(:members, kind_of: Array)
       attribute(:purge_unknown_members, equal_to: [true, false], default: lazy { parent.purge_unknown_members })
 
+      # in whyrun there is a chance we won't have our gem dependencies installed
       def whyrun_supported?
         false
       end
@@ -59,9 +60,10 @@ module PoiseGithub
 
       def action_delete
         if new_resource.parent.has_team?(new_resource.name)
-          current_team = new_resource.client.organization_teams(new_resource.organization).find{|t| t[:name] = new_resource.name } 
-          new_resource.client.delete_team(current_team[:id])
-          new_resource.updated_by_last_action(true)
+          current_team = new_resource.client.organization_teams(new_resource.organization).find{|t| t[:name] = new_resource.name }
+          converge_by "delete_team #{new_resource.name} in #{new_resource.organization}" do
+            new_resource.client.delete_team(current_team[:id])
+          end
         end
       end
 
@@ -74,12 +76,16 @@ module PoiseGithub
             obj[attr] = new_resource.send(attr)
           end
         end
-        current_team = new_resource.client.create_team(new_resource.organization, obj)
+
+        converge_by "create_team #{new_resource.name} in #{new_resource.organization}" do
+          current_team = new_resource.client.create_team(new_resource.organization, obj)
+        end
 
         new_resource.members.each do |member|
-          new_resource.client.add_team_membership(current_team[:id], member)
+          converge_by "add_team_membership for #{member}" do
+            new_resource.client.add_team_membership(current_team[:id], member)
+          end
         end
-        new_resource.updated_by_last_action(true)
       end
 
       def update_team
@@ -93,8 +99,9 @@ module PoiseGithub
         end
 
         unless obj.empty?
-          new_resource.client.update_team(current_team[:id], obj)
-          new_resource.updated_by_last_action(true)
+          converge_by "update_team #{new_resource.name}" do
+            new_resource.client.update_team(current_team[:id], obj)
+          end
         end
 
         current_team_members = new_resource.client.team_members(current_team[:id])
@@ -103,15 +110,17 @@ module PoiseGithub
         members_to_add = new_resource.members - current_members
         members_to_purge = current_members - new_resource.members
 
-        members_to_add.each do |added|
-          new_resource.client.add_team_membership(current_team[:id], added)
-          new_resource.updated_by_last_action(true)
+        members_to_add.each do |member|
+          converge_by "add_team_membership for #{member}" do
+            new_resource.client.add_team_membership(current_team[:id], member)
+          end
         end
 
         if new_resource.purge_unknown_members
-          members_to_purge.each do |purged|
-            new_resource.client.remove_team_membership(current_team[:id], purged)
-            new_resource.updated_by_last_action(true)
+          members_to_purge.each do |member|
+            converge_by "remove_team_membership for #{member}" do
+              new_resource.client.remove_team_membership(current_team[:id], member)
+            end
           end
         end
       end
