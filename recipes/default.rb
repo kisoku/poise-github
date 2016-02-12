@@ -16,6 +16,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-chef_gem 'faraday-http-cache' do
-  compile_time false
+%w[ faraday-http-cache octokit ].each do |gem|
+  chef_gem gem do
+    compile_time false
+  end
 end
