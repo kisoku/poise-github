@@ -24,6 +24,14 @@ module PoiseGithub
 
       default_action(:create)
 
+      attribute(:organization_name, kind_of: String, name_attribute: true)
+      attribute(:purge_unknown_teams, equal_to: [true, false], default: lazy { node['poise-github']['purge_unknown_teams'] })
+      attribute(:purge_unknown_members, equal_to: [true, false], default: lazy { node['poise-github']['purge_unknown_members'] })
+
+      def whyrun_supported?
+        false
+      end
+
       def teams
         subresources.select {|res| res.is_a?(PoiseGithub::Team::Resource)}
       end
@@ -43,9 +51,12 @@ module PoiseGithub
       provides(:github_organization)
 
       def action_create
+        # can't create orgs via api ?
+
       end
 
       def action_delete
+        # can't delete orgs via api ?
       end
 
       private

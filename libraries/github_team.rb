@@ -30,7 +30,7 @@ module PoiseGithub
       attribute(:permission, equal_to: ['pull', 'push', 'admin'])
       attribute(:privacy, equal_to: ['secret', 'closed'])
       attribute(:members, kind_of: Array)
-      attribute(:purge_unknown_members, equal_to: [true, false], default: true)
+      attribute(:purge_unknown_members, equal_to: [true, false], default: lazy { parent.purge_unknown_members })
 
       def whyrun_supported?
         false
@@ -41,7 +41,7 @@ module PoiseGithub
       end
 
       def organization
-        parent.name
+        parent.organization_name
       end
     end
 
