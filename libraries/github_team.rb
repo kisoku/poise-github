@@ -45,10 +45,6 @@ module PoiseGithub
       include Poise
       provides(:github_team)
 
-      def client
-        new_resource.parent.client
-      end
-
       def action_create
         if new_resource.parent.has_team?(new_resource.name)
           update_team
