@@ -16,8 +16,6 @@
 
 
 require 'poise'
-require 'octokit'
-require 'faraday'
 
 module PoiseGithub
   module Github
@@ -31,7 +29,13 @@ module PoiseGithub
       attribute(:login, kind_of: String, required: true, default: lazy { node['poise-github']['login'] })
       attribute(:access_token, kind_of: String, required: true, default: lazy { node['poise-github']['access_token'] })
 
+      def whyrun_supported?
+        false
+      end
+
       def client
+        require 'octokit'
+
         args = {
           login: login,
           access_token: access_token,
