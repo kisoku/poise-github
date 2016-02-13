@@ -23,3 +23,10 @@ suites:
       poise-github:
         login: <%= ENV.fetch('POISE_GITHUB_LOGIN', 'badlogin') %>
         access_token: <%= ENV.fetch('POISE_GITHUB_ACCESS_TOKEN', 'badtoken') %>
+  - name: delete
+    run_list:
+      - recipe[poise-github-test::delete]
+    attributes:
+      poise-github:
+        login: <%= ENV.fetch('POISE_GITHUB_LOGIN', 'badlogin') %>
+        access_token: <%= ENV.fetch('POISE_GITHUB_ACCESS_TOKEN', 'badtoken') %>
