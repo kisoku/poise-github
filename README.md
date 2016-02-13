@@ -4,7 +4,7 @@ Manage your GitHub organizations with Poise.
 
 ## Usage
 
-```
+```ruby
 github 'github.com' do
   login 'ba_baracus'
   access_token 'ipitythefoolthatusesthistoken'
@@ -29,7 +29,7 @@ end
 
 ## Working with GitHub Enterprise
 
-```
+```ruby
 github 'ghe.example.com' do
   api_endpoint 'https://ghe.example.com/api/v3/'
   login 'ba_baracus'
