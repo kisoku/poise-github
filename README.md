@@ -26,3 +26,13 @@ github_team 'a-team' do
   ]
 end
 ```
+
+## Working with GitHub Enterprise
+
+```
+github 'ghe.example.com' do
+  api_endpoint 'https://ghe.example.com/api/v3/'
+  login 'ba_baracus'
+  access_token 'ipitythefoolthatusesthistoken'
+end
+```
