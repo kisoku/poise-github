@@ -27,6 +27,7 @@ module PoiseGithub
       attribute(:organization_name, kind_of: String, name_attribute: true)
       attribute(:purge_unknown_teams, equal_to: [true, false], default: lazy { node['poise-github']['purge_unknown_teams'] })
       attribute(:purge_unknown_members, equal_to: [true, false], default: lazy { node['poise-github']['purge_unknown_members'] })
+      attribute(:purge_unknown_repositories, equal_to: [true, false], default: lazy { node['poise-github']['purge_unknown_repositories'] })
 
       def whyrun_supported?
         false

@@ -26,11 +26,12 @@ module PoiseGithub
       actions(:create, :delete)
 
       attribute(:description, kind_of: String)
-      attribute(:repositories, kind_of: Array)
+      attribute(:repositories, kind_of: Array, default: [])
       attribute(:permission, equal_to: ['pull', 'push', 'admin'])
       attribute(:privacy, equal_to: ['secret', 'closed'])
-      attribute(:members, kind_of: Array)
+      attribute(:members, kind_of: Array, default: [])
       attribute(:purge_unknown_members, equal_to: [true, false], default: lazy { parent.purge_unknown_members })
+      attribute(:purge_unknown_repositories, equal_to: [true, false], default: lazy { parent.purge_unknown_repositories })
 
       # in whyrun there is a chance we won't have our gem dependencies installed
       def whyrun_supported?
@@ -69,16 +70,20 @@ module PoiseGithub
 
       private
 
+      def current_team
+        @current_team ||= new_resource.client.organization_teams(new_resource.organization).find{|t| t[:name] = new_resource.name }
+      end
+
       def create_team
         obj = { name: new_resource.name }
-        [ :description, :permission, :repositories, :privacy ].each do |attr|
+        [ :description, :permission, :privacy ].each do |attr|
           if new_resource.send(attr)
             obj[attr] = new_resource.send(attr)
           end
         end
 
         converge_by "create_team #{new_resource.name} in #{new_resource.organization}" do
-          current_team = new_resource.client.create_team(new_resource.organization, obj)
+          @current_team = new_resource.client.create_team(new_resource.organization, obj)
         end
 
         new_resource.members.each do |member|
@@ -86,11 +91,16 @@ module PoiseGithub
             new_resource.client.add_team_membership(current_team[:id], member)
           end
         end
+
+        new_resource.repositories.each do |repo|
+          converge_by "add_team_repository for #{repo}" do
+            new_resource.client.add_team_repository(current_team[:id], repo)
+          end
+        end
       end
 
       def update_team
         obj = {}
-        current_team = new_resource.client.organization_teams(new_resource.organization).find{|t| t[:name] = new_resource.name }
         [ :description, :permission, :repositories, :privacy ].each do |attr|
           val = new_resource.send(attr)
           if val and current_team[attr] != val
@@ -105,10 +115,17 @@ module PoiseGithub
         end
 
         current_team_members = new_resource.client.team_members(current_team[:id])
-        current_members = current_team_members.map {|member| member[:login] }
+        current_team_repositories = new_resource.client.team_repositories(current_team[:id])
 
+        current_members = current_team_members.map {|member| member[:login] }
+        current_repos = current_team_repositories.map {|repo| repo[:full_name] }
+
+        # can't do math on nil
         members_to_add = new_resource.members - current_members
         members_to_purge = current_members - new_resource.members
+
+        repos_to_add = new_resource.repositories - current_repos
+        repos_to_purge = current_repos - new_resource.repositories
 
         members_to_add.each do |member|
           converge_by "add_team_membership for #{member}" do
@@ -120,6 +137,20 @@ module PoiseGithub
           members_to_purge.each do |member|
             converge_by "remove_team_membership for #{member}" do
               new_resource.client.remove_team_membership(current_team[:id], member)
+            end
+          end
+        end
+
+        repos_to_add.each do |repo|
+          converge_by "add_team_repository for #{repo}" do
+            new_resource.client.add_team_repository(current_team[:id], repo)
+          end
+        end
+
+        if new_resource.purge_unknown_repositories
+          repos_to_purge.each do |repo|
+            converge_by "remove_team_repository for #{repo}" do
+              new_resource.client.remove_team_repository(current_team[:id], repo)
             end
           end
         end
