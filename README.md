@@ -2,6 +2,10 @@
 
 Manage your GitHub organizations with Poise.
 
+## Requirements
+
+Poise-github only works on Chef 12 and up due to it's dependency on Poise 2.x
+
 ## Usage
 
 ```ruby

@@ -26,6 +26,7 @@ module PoiseGithub
       default_action(:nothing)
 
       attribute(:api_endpoint, kind_of: String)
+      attribute(:auto_paginate, equal_to: [true, false], default: true)
       attribute(:login, kind_of: String, required: true, default: lazy { node['poise-github']['login'] })
       attribute(:access_token, kind_of: String, required: true, default: lazy { node['poise-github']['access_token'] })
 
@@ -38,9 +39,11 @@ module PoiseGithub
 
         args = {
           login: login,
+          auto_paginate: auto_paginate,
           access_token: access_token,
           middleware: middleware
         }
+
         args[:access_token] = access_token if access_token
 
         @client ||= Octokit::Client.new(
