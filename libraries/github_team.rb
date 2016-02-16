@@ -26,7 +26,7 @@ module PoiseGithub
       actions(:create, :delete)
 
       attribute(:description, kind_of: String)
-      attribute(:repositories, kind_of: [Symbol, Array])
+      attribute(:repositories, kind_of: Array)
       attribute(:permission, equal_to: ['pull', 'push', 'admin'])
       attribute(:privacy, equal_to: ['secret', 'closed'])
       attribute(:members, kind_of: Array)
