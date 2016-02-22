@@ -61,10 +61,7 @@ module PoiseGithub
 
       def action_delete
         if new_resource.parent.has_team?(new_resource.name)
-          @current_team = new_resource.client.organization_teams(new_resource.organization).find{|t| t[:name] == new_resource.name }
-          converge_by "delete_team #{new_resource.name}" do
-            new_resource.client.delete_team(current_team[:id])
-          end
+          delete_team
         end
       end
 
@@ -92,6 +89,15 @@ module PoiseGithub
 
         new_resource.repositories.each do |repo|
           add_team_repo(repo)
+        end
+      end
+
+      def delete_team
+        converge_by "delete_team #{new_resource.name}" do
+          res = new_resource.client.delete_team(current_team[:id])
+          unless res
+            raise RuntimeError, "could not delete_team: #{new_resource.name}"
+          end
         end
       end
 
