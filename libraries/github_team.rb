@@ -61,8 +61,8 @@ module PoiseGithub
 
       def action_delete
         if new_resource.parent.has_team?(new_resource.name)
-          current_team = new_resource.client.organization_teams(new_resource.organization).find{|t| t[:name] = new_resource.name }
-          converge_by "delete_team #{new_resource.name} in #{new_resource.organization}" do
+          @current_team = new_resource.client.organization_teams(new_resource.organization).find{|t| t[:name] == new_resource.name }
+          converge_by "delete_team #{new_resource.name}" do
             new_resource.client.delete_team(current_team[:id])
           end
         end
@@ -71,7 +71,7 @@ module PoiseGithub
       private
 
       def current_team
-        @current_team ||= new_resource.client.organization_teams(new_resource.organization).find{|t| t[:name] = new_resource.name }
+        @current_team ||= new_resource.client.organization_teams(new_resource.organization).find{|t| t[:name] == new_resource.name }
       end
 
       def create_team
