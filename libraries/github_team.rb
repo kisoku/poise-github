@@ -82,24 +82,41 @@ module PoiseGithub
           end
         end
 
-        converge_by "create_team #{new_resource.name} in #{new_resource.organization}" do
-          @current_team = new_resource.client.create_team(new_resource.organization, obj)
+        converge_by "create_team #{new_resource.name}" do
+          new_resource.client.create_team(new_resource.organization, obj)
         end
 
         new_resource.members.each do |member|
-          converge_by "add_team_membership for #{member}" do
-            new_resource.client.add_team_membership(current_team[:id], member)
-          end
+          add_team_member(member)
         end
 
         new_resource.repositories.each do |repo|
-          converge_by "add_team_repository for #{repo}" do
-            new_resource.client.add_team_repository(current_team[:id], repo)
-          end
+          add_team_repo(repo)
         end
       end
 
       def update_team
+        Chef::Log.debug("current_team: #{current_team}")
+        Chef::Log.debug("current_team[:id]: #{current_team[:id]}")
+
+        current_team_members = new_resource.client.team_members(current_team[:id])
+        current_team_repositories = new_resource.client.team_repositories(current_team[:id])
+        current_members = current_team_members.map {|member| member[:login] }
+        current_repos = current_team_repositories.map {|repo| repo[:full_name] }
+
+        members_to_add = new_resource.members - current_members
+        Chef::Log.debug("members: #{new_resource.members}")
+        Chef::Log.debug("current_members: #{current_members}")
+
+        members_to_purge = current_members - new_resource.members
+        Chef::Log.debug("members_to_add: #{members_to_add}")
+        Chef::Log.debug("members_to_remove: #{members_to_purge}")
+
+        repos_to_add = new_resource.repositories - current_repos
+        repos_to_purge = current_repos - new_resource.repositories
+        Chef::Log.debug("repos_to_add: #{repos_to_add}")
+        Chef::Log.debug("repos_to_purge: #{repos_to_purge}")
+
         obj = {}
         [ :description, :permission, :repositories, :privacy ].each do |attr|
           val = new_resource.send(attr)
@@ -114,44 +131,59 @@ module PoiseGithub
           end
         end
 
-        current_team_members = new_resource.client.team_members(current_team[:id])
-        current_team_repositories = new_resource.client.team_repositories(current_team[:id])
-
-        current_members = current_team_members.map {|member| member[:login] }
-        current_repos = current_team_repositories.map {|repo| repo[:full_name] }
-
-        # can't do math on nil
-        members_to_add = new_resource.members - current_members
-        members_to_purge = current_members - new_resource.members
-
-        repos_to_add = new_resource.repositories - current_repos
-        repos_to_purge = current_repos - new_resource.repositories
-
         members_to_add.each do |member|
-          converge_by "add_team_membership for #{member}" do
-            new_resource.client.add_team_membership(current_team[:id], member)
-          end
+          add_team_member(member)
         end
 
         if new_resource.purge_unknown_members
           members_to_purge.each do |member|
-            converge_by "remove_team_membership for #{member}" do
-              new_resource.client.remove_team_membership(current_team[:id], member)
-            end
+            remove_team_member(member)
           end
         end
 
         repos_to_add.each do |repo|
-          converge_by "add_team_repository for #{repo}" do
-            new_resource.client.add_team_repository(current_team[:id], repo)
-          end
+          add_team_repo(repo)
         end
 
         if new_resource.purge_unknown_repositories
           repos_to_purge.each do |repo|
-            converge_by "remove_team_repository for #{repo}" do
-              new_resource.client.remove_team_repository(current_team[:id], repo)
-            end
+            remove_team_repo(repo)
+          end
+        end
+      end
+
+      def add_team_member(member)
+        converge_by "add_team_membership for #{member}" do
+          res = new_resource.client.add_team_membership(current_team[:id], member)
+          unless res
+            raise RuntimeError, "did not add_team_membership for #{member} with response #{res}"
+          end
+        end
+      end
+
+      def remove_team_member(member)
+        converge_by "add_team_membership for #{member}" do
+          res = new_resource.client.remove_team_membership(current_team[:id], member)
+          unless res
+            raise RuntimeError, "did not add_team_membership for #{member} with response #{res}"
+          end
+        end
+      end
+
+      def add_team_repo(repo)
+        converge_by "add_team_repository for #{repo}" do
+          res = new_resource.client.add_team_repository(current_team[:id], repo)
+          unless res
+            raise RuntimeError, "could not add_team_repository for #{repo} with response #{res}"
+          end
+        end
+      end
+
+      def remove_team_repo(repo)
+        converge_by "remove_team_repository for #{repo}" do
+          res = new_resource.client.remove_team_repository(current_team[:id], repo)
+          unless res
+            raise RuntimeError, "could not remove_team_repository for #{repo} with response #{res}"
           end
         end
       end
