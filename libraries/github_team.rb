@@ -172,6 +172,7 @@ module PoiseGithub
 
       def add_team_repo(repo)
         converge_by "add_team_repository for #{repo}" do
+          options = { permission: new_resource.permission }
           res = new_resource.client.add_team_repository(current_team[:id], repo)
           unless res
             raise RuntimeError, "could not add_team_repository for #{repo} with response #{res}"
