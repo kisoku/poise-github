@@ -42,7 +42,7 @@ module PoiseGithub
       end
 
       def has_team?(team_name)
-        not client.organization_teams(name).find {|t| t[:name] == team_name }.nil?
+        not client.organization_teams(organization_name).find {|t| t[:name] == team_name }.nil?
       end
     end
 
@@ -52,12 +52,22 @@ module PoiseGithub
       provides(:github_organization)
 
       def action_create
-        # can't create orgs via api ?
+        # can't create orgs via api!
+        current_teams = new_resource.client.organization_teams(new_resource.organization_name)
+        current_team_names = current_teams.map {|t| t[:name] }
+        defined_team_names = new_resource.teams.map {|t| t.name }
 
+        teams_to_purge = current_team_names - defined_team_names
+
+        if new_resource.purge_unknown_teams
+          teams_to_purge.each do |team|
+            github_team "team".run_action(:delete)
+          end
+        end
       end
 
       def action_delete
-        # can't delete orgs via api ?
+        # can't delete orgs via api!
       end
 
       private
