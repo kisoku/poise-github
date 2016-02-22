@@ -45,6 +45,17 @@ module PoiseGithub
       def organization
         parent.organization_name
       end
+
+      def permission_hash
+        case permission
+        when 'admin'
+          {pull: true, push: true, admin: true}
+        when 'push'
+          {pull: true, push: true, admin: false}
+        when 'pull'
+          {pull: true, push: false, admin: false}
+        end
+      end
     end
 
     class Provider < Chef::Provider
@@ -123,6 +134,13 @@ module PoiseGithub
         Chef::Log.debug("repos_to_add: #{repos_to_add}")
         Chef::Log.debug("repos_to_purge: #{repos_to_purge}")
 
+        repos_to_update = []
+        current_team_repositories.each do |repo|
+          if repo[:permissions].to_h != new_resource.permission_hash
+            repos_to_update << repo[:full_name]
+          end
+        end
+
         obj = {}
         [ :description, :permission, :repositories, :privacy ].each do |attr|
           val = new_resource.send(attr)
@@ -148,6 +166,10 @@ module PoiseGithub
         end
 
         repos_to_add.each do |repo|
+          add_team_repo(repo)
+        end
+
+        repos_to_update.each do |repo|
           add_team_repo(repo)
         end
 
