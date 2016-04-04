@@ -18,6 +18,6 @@
 
 %w[ faraday-http-cache octokit ].each do |gem|
   chef_gem gem do
-    compile_time false
+    compile_time true
   end
 end
